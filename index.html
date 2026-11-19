@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FINDMYTHING - College Campus Lost & Found</title>
+  <meta name="description"
+    content="Centralized campus lost and found portal for students, faculty, and staff. Report lost items, search recovered belongings, and verify claims safely.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <!-- Campus Ticker Bar -->
+  <aside class="campus-ticker-bar" aria-label="Campus alert and status notice">
+    <div class="container">
+      <div class="ticker-content">
+        <div class="ticker-left">
+          <span class="ticker-pulse" aria-hidden="true"></span>
+          <span><strong>CAMPUS LOST &amp; FOUND HUB:</strong> Fall 2026 Active Operations &bull; Central Security &amp;
+            Union Helpdesks open daily 8:00 AM &ndash; 10:00 PM</span>
+        </div>
+        <div class="ticker-right">
+          <a href="#depots" id="link-depots-modal" class="ticker-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            Campus Handover Depots
+          </a>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Firebase Status Alert Banner -->
+  <div id="firebase-unconfigured-banner" class="alert-banner alert-banner-warning" style="display: none;">
+    <div class="container"
+      style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%;">
+      <div>
+        <strong>⚠️ Firebase Backend Configuration Required:</strong>
+        <span>Insert your project credentials into <code>firebase-config.js</code> to enable live Authentication and
+          Cloud Firestore database.</span>
+      </div>
+      <button type="button" class="alert-banner-action-btn" onclick="FMT.openFirebaseSetupModal()">
+        Setup Guide &rarr;
+      </button>
+    </div>
+  </div>
+
+  <!-- Email Verification Alert Banner -->
+  <div id="email-verification-banner" class="alert-banner alert-banner-info" style="display: none;">
+    <div class="container"
+      style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%;">
+      <div>
+        <strong>✉ Campus Email Verification Pending:</strong>
+        <span id="email-verification-text">Please verify your campus email address to ensure account security.</span>
+      </div>
+      <button type="button" class="alert-banner-action-btn" id="btn-resend-verification"
+        onclick="FMT.resendVerification()">
+        Resend Verification Email
+      </button>
+    </div>
+  </div>
+
+  <!-- Site Header & Navigation -->
+  <header class="site-header">
+    <div class="container">
+      <div class="nav-inner">
+        <!-- Brand Logo -->
+        <a href="#dashboard" class="brand" aria-label="FINDMYTHING Home">
+          <div class="brand-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              <circle cx="11" cy="11" r="3"></circle>
+            </svg>
+          </div>
+          <div class="brand-text">
+            FIND<span>MY</span>THING
+            <span class="brand-badge">CAMPUS</span>
+          </div>
+        </a>
+
+        <!-- Desktop Navigation -->
+        <nav class="desktop-nav" aria-label="Primary Navigation">
+          <a href="#dashboard" class="nav-link active" data-view="dashboard">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            Dashboard
+          </a>
+          <a href="#lost" class="nav-link" data-view="lost">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            Lost Items
+            <span class="nav-count-badge" id="nav-count-lost">0</span>
+          </a>
+          <a href="#found" class="nav-link" data-view="found">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            Found Items
+            <span class="nav-count-badge" id="nav-count-found">0</span>
+          </a>
+        </nav>
+
+        <!-- Right Header Actions -->
+        <div class="header-actions">
+          <button type="button" class="btn btn-primary" id="btn-header-report" data-view="report">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Report Item</span>
+          </button>
+
+          <!-- Admin Claims Quick Access Button (Visible to admins only) -->
+          <button type="button" class="btn-admin-nav" id="btn-header-admin" style="display: none;"
+            onclick="FMT.openAdminClaimsModal()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            Admin Claims (<span id="admin-pending-badge">0</span>)
+          </button>
+
+          <!-- Notifications Bell & Dropdown Wrap -->
+          <div class="notifications-dropdown-wrap" id="notifications-dropdown-wrap">
+            <button type="button" class="btn-icon-nav" id="btn-notifications-bell" aria-label="View notifications"
+              title="Notifications" onclick="FMT.toggleNotificationsDropdown(event)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
+            </button>
+
+            <!-- Notifications Dropdown Panel -->
+            <div class="notifications-panel" id="notifications-panel" style="display: none;" role="region"
+              aria-label="Notifications Panel">
+              <div class="notifications-header">
+                <div>
+                  <h4 class="notifications-title">Notifications</h4>
+                  <span class="notifications-subtext" id="notifications-unread-text">0 unread</span>
+                </div>
+                <button type="button" class="btn-text-sm" id="btn-mark-all-read"
+                  onclick="FMT.markAllNotificationsRead()" style="display: none;">
+                  Mark all read
+                </button>
+              </div>
+              <div class="notifications-list" id="notifications-list">
+                <!-- Dynamically rendered -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Auth Container: Either "Sign In" button or User Profile Pill -->
+          <div id="auth-header-container" class="user-profile-menu-wrap">
+            <button type="button" class="auth-header-btn" id="btn-header-login" onclick="FMT.openAuthModal('login')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                <polyline points="10 17 15 12 10 7"></polyline>
+                <line x1="15" y1="12" x2="3" y2="12"></line>
+              </svg>
+              Sign In
+            </button>
+          </div>
+
+          <button type="button" class="mobile-menu-btn" id="mobile-toggle-btn" aria-label="Toggle Navigation Menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Drawer Menu -->
+    <div class="mobile-nav-drawer" id="mobile-nav-drawer">
+      <a href="#dashboard" class="nav-link active" data-view="dashboard">Dashboard</a>
+      <a href="#lost" class="nav-link" data-view="lost">Lost Items (<span id="m-count-lost">0</span>)</a>
+      <a href="#found" class="nav-link" data-view="found">Found Items (<span id="m-count-found">0</span>)</a>
+      <a href="#report" class="nav-link" data-view="report">Report an Item</a>
+      <a href="javascript:void(0)" id="m-my-claims-link" class="nav-link" onclick="FMT.openMyClaimsModal()"
+        style="display: none;">My Claims</a>
+      <a href="javascript:void(0)" id="m-notifications-link" class="nav-link" onclick="FMT.openNotificationsDropdown()">
+        Notifications (<span id="m-count-notifications">0</span>)
+      </a>
+      <a href="javascript:void(0)" id="m-admin-link" class="nav-link" onclick="FMT.openAdminClaimsModal()"
+        style="display: none; color: #b45309; font-weight: 700;">⚙ Admin Claims Review</a>
+      <button type="button" class="btn btn-outline btn-sm" id="m-depots-btn" style="margin-top: 0.5rem;">
+        Campus Safe Handover Depots
+      </button>
+      <div id="m-auth-slot" style="margin-top: 0.5rem;">
+        <button type="button" class="btn btn-primary btn-sm" style="width: 100%;" onclick="FMT.openAuthModal('login')">
+          Sign In / Register
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main View Root -->
+  <main id="app-root">
+
+    <!-- ======================================================================
+         VIEW 1: DASHBOARD
+         ====================================================================== -->
+    <section id="view-dashboard" class="view-section active">
+      <!-- Hero Banner -->
+      <div class="hero-banner">
+        <div class="container">
+          <div class="hero-grid">
+            <div class="hero-text-content">
+              <div class="hero-tag">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                Official University Recovery Network
+              </div>
+              <h1 class="hero-title">Misplaced something on campus? We’ll help you find it.</h1>
+              <p class="hero-subtitle">
+                A connected college community connecting lost belongings with verified owners across libraries, labs,
+                dining halls, and student centers.
+              </p>
+              <div class="hero-ctas">
+                <button type="button" class="btn btn-secondary btn-lg" id="hero-btn-report-lost"
+                  data-report-type="lost">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  I Lost Something
+                </button>
+                <button type="button" class="btn btn-secondary btn-lg" id="hero-btn-report-found"
+                  data-report-type="found">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                  I Found Something
+                </button>
+              </div>
+            </div>
+
+            <!-- Hero Quick Search Widget -->
+            <div class="hero-search-card">
+              <h3>Quick Campus Search</h3>
+              <p>Type keywords, brand, room number, or student ID</p>
+              <form id="hero-search-form">
+                <div class="hero-search-input-wrap">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  <input type="text" id="hero-search-input" class="hero-search-input"
+                    placeholder="Search AirPods, Hydro Flask, ID Card, Keys...">
+                </div>
+                <div class="popular-chips">
+                  <span>Popular:</span>
+                  <button type="button" class="popular-chip" data-search-term="AirPods">AirPods</button>
+                  <button type="button" class="popular-chip" data-search-term="Student ID">Student ID</button>
+                  <button type="button" class="popular-chip" data-search-term="Calculator">Calculator</button>
+                  <button type="button" class="popular-chip" data-search-term="Keys">Keys</button>
+                  <button type="button" class="popular-chip" data-search-term="Hydro Flask">Hydro Flask</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="container">
+        <!-- Live Campus Stats Grid -->
+        <div class="stats-grid" id="stats-overview-grid">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Category Filter Carousel / Quick Selector -->
+        <div class="section-header-row">
+          <h2 class="section-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+            Browse by Item Category
+          </h2>
+          <span style="font-size: 0.8125rem; color: var(--slate-500);">Click to filter items instantly</span>
+        </div>
+        <div class="category-pills-bar" id="category-pills-container">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Twin Section: Recent Lost & Recent Found Feeds -->
+        <div class="dashboard-twin-grid">
+          <!-- Lost Feed -->
+          <div class="twin-column">
+            <div class="twin-header">
+              <div class="twin-title">
+                <span class="badge badge-lost">LOST</span>
+                <span>Urgent &amp; Recent Lost Items</span>
+              </div>
+              <a href="#lost" class="section-link" data-view="lost">
+                View All Lost &rarr;
+              </a>
+            </div>
+            <div class="items-mini-list" id="dashboard-recent-lost-list">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Found Feed -->
+          <div class="twin-column">
+            <div class="twin-header">
+              <div class="twin-title">
+                <span class="badge badge-found">FOUND</span>
+                <span>Recently Turned-In Belongings</span>
+              </div>
+              <a href="#found" class="section-link" data-view="found">
+                View All Found &rarr;
+              </a>
+            </div>
+            <div class="items-mini-list" id="dashboard-recent-found-list">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Campus Safe Handover Depots Section -->
+        <div class="campus-depots-section">
+          <div class="section-header-row">
+            <h2 class="section-title">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+              Verified Campus Handover Depots
+            </h2>
+            <span style="font-size: 0.875rem; color: var(--slate-500);">Drop off or claim items safely at these official
+              desks</span>
+          </div>
+          <div class="depots-grid">
+            <div class="depot-card">
+              <div class="depot-header">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-600)"
+                  stroke-width="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                </svg>
+                Main Campus Security &amp; Safety HQ
+              </div>
+              <div class="depot-meta">
+                Security Building Room 102 (Adjacent to East Gate Parking)
+              </div>
+              <div class="depot-hours">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                Open 24/7 for high-value items &amp; keys
+              </div>
+            </div>
+
+            <div class="depot-card">
+              <div class="depot-header">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-600)"
+                  stroke-width="2">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+                Main Library Circulation &amp; Help Desk
+              </div>
+              <div class="depot-meta">
+                1st Floor Main Entrance Concourse &bull; Phone: (555) 443-1200
+              </div>
+              <div class="depot-hours">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                Mon - Fri: 7:30 AM &ndash; Midnight | Sat-Sun: 9 AM &ndash; 10 PM
+              </div>
+            </div>
+
+            <div class="depot-card">
+              <div class="depot-header">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-600)"
+                  stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                  <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                  <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                </svg>
+                Student Union Information Center
+              </div>
+              <div class="depot-meta">
+                Student Union Level 1 Atrium (Next to Bookstore) &bull; Phone: (555) 019-3320
+              </div>
+              <div class="depot-hours">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                Mon - Sat: 8:00 AM &ndash; 9:00 PM
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         VIEW 2 & 3: ITEMS DIRECTORY (LOST / FOUND SHARED ENGINE)
+         ====================================================================== -->
+    <section id="view-items" class="view-section">
+      <div class="view-top-header">
+        <div class="container">
+          <div class="view-headline">
+            <div class="view-headline-left">
+              <h1 id="items-view-title">Lost Items Directory</h1>
+              <p id="items-view-subtitle">Browse reported lost belongings across all campus zones</p>
+            </div>
+            <div class="view-headline-actions">
+              <button type="button" class="btn btn-primary" id="btn-directory-report">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span id="btn-directory-report-label">Report a Lost Item</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="container">
+        <!-- Filter Toolbar -->
+        <div class="filter-toolbar">
+          <div class="filter-row-primary">
+            <!-- Search Field -->
+            <div class="search-input-group">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="filter-search" class="search-field"
+                placeholder="Search by title, brand, description or distinctive marks...">
+              <button type="button" id="btn-clear-search" class="search-clear-btn" title="Clear search">&times;</button>
+            </div>
+
+            <!-- Category Selector -->
+            <div class="select-wrapper">
+              <select id="filter-category" class="custom-select" aria-label="Filter by Category">
+                <option value="all">All Categories</option>
+                <!-- Categories populated by JS -->
+              </select>
+            </div>
+
+            <!-- Location Selector -->
+            <div class="select-wrapper">
+              <select id="filter-location" class="custom-select" aria-label="Filter by Campus Location">
+                <option value="all">All Campus Locations</option>
+                <!-- Locations populated by JS -->
+              </select>
+            </div>
+          </div>
+
+          <div class="filter-row-secondary">
+            <div class="filters-dropdown-cluster">
+              <!-- Urgency / Status Selector -->
+              <div class="select-wrapper">
+                <select id="filter-urgency" class="custom-select" aria-label="Filter by Urgency">
+                  <option value="all">Any Urgency Level</option>
+                  <option value="high">High Urgency Only</option>
+                  <option value="medium">Medium Urgency</option>
+                  <option value="low">Standard / Low</option>
+                </select>
+              </div>
+
+              <!-- Status Selector (Active vs Resolved) -->
+              <div class="select-wrapper">
+                <select id="filter-status" class="custom-select" aria-label="Filter by Status">
+                  <option value="active">Active (Unresolved)</option>
+                  <option value="all">All Items (Inc. Resolved)</option>
+                  <option value="resolved">Resolved / Returned</option>
+                </select>
+              </div>
+
+              <!-- Sort Order -->
+              <div class="select-wrapper">
+                <select id="filter-sort" class="custom-select" aria-label="Sort order">
+                  <option value="date-desc">Newest First</option>
+                  <option value="date-asc">Oldest First</option>
+                  <option value="reward-desc">Highest Reward</option>
+                  <option value="urgency-desc">Most Urgent First</option>
+                </select>
+              </div>
+
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-reset-filters">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="1 4 1 10 7 10"></polyline>
+                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                </svg>
+                Reset
+              </button>
+            </div>
+
+            <!-- View Mode Switcher -->
+            <div class="view-options-cluster">
+              <button type="button" class="view-toggle-btn active" id="btn-view-grid" title="Grid Layout">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+              </button>
+              <button type="button" class="view-toggle-btn" id="btn-view-list" title="Compact List Layout">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="8" y1="6" x2="21" y2="6"></line>
+                  <line x1="8" y1="12" x2="21" y2="12"></line>
+                  <line x1="8" y1="18" x2="21" y2="18"></line>
+                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary & Tags -->
+        <div class="results-summary-bar">
+          <div id="results-count-text">Showing <strong>0</strong> items</div>
+          <div class="active-filter-tags" id="active-tags-container">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Items Cards Grid / List Container -->
+        <div class="items-grid" id="items-catalog-container">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Empty State Container -->
+        <div class="empty-state" id="items-empty-state" style="display: none;">
+          <div class="empty-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </div>
+          <h3 class="empty-title">No matching campus items found</h3>
+          <p class="empty-subtext">Try widening your search terms, resetting category or location filters, or submit a
+            new report if you lost or found this item.</p>
+          <button type="button" class="btn btn-primary" id="btn-empty-report">Report This Item Now</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         VIEW 4: REPORT AN ITEM FORM
+         ====================================================================== -->
+    <section id="view-report" class="view-section">
+      <div class="view-top-header">
+        <div class="container">
+          <div class="report-view-wrapper">
+            <div class="view-headline">
+              <div class="view-headline-left">
+                <h1>Report a Campus Belonging</h1>
+                <p>Submit item details so the university community and safety dispatch can assist with recovery.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="report-view-wrapper">
+          <!-- Item Type Selector Tabs -->
+          <div class="report-type-selector">
+            <div class="type-toggle-card selected-lost" id="type-opt-lost" role="button" tabindex="0">
+              <div class="type-icon type-lost-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              </div>
+              <div class="type-text">
+                <h4>I Lost an Item</h4>
+                <p>Broadcast details to alert campus security &amp; fellow students</p>
+              </div>
+            </div>
+
+            <div class="type-toggle-card" id="type-opt-found" role="button" tabindex="0">
+              <div class="type-icon type-found-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              </div>
+              <div class="type-text">
+                <h4>I Found an Item</h4>
+                <p>Register a found item or record a safe depot handover</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Report Form -->
+          <form id="report-item-form" class="form-card" novalidate>
+            <input type="hidden" id="report-type-field" value="lost">
+
+            <!-- Section 1: Item Basic Info -->
+            <div class="form-section">
+              <h3 class="form-section-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <tag>
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                    <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                  </tag>
+                </svg>
+                Item Details
+              </h3>
+              <p class="form-section-desc">Provide accurate basic information so owners or finders can recognize the
+                item.</p>
+
+              <div class="form-group">
+                <label for="form-title" class="form-label">
+                  Item Title or Model <span class="required">*</span>
+                </label>
+                <input type="text" id="form-title" class="form-control"
+                  placeholder="e.g. Apple AirPods Pro (2nd Gen) in Blue Case" required>
+                <span class="form-hint">Mention brand, color, and specific model if known</span>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label for="form-category" class="form-label">
+                    Category <span class="required">*</span>
+                  </label>
+                  <select id="form-category" class="form-control" required>
+                    <option value="">Select a category...</option>
+                    <!-- Populated dynamically -->
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="form-color" class="form-label">Primary Color / Finish</label>
+                  <input type="text" id="form-color" class="form-control"
+                    placeholder="e.g. Navy Blue, Mint Green, Silver">
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 2: Campus Location & Date -->
+            <div class="form-section">
+              <h3 class="form-section-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                Campus Location &amp; Time
+              </h3>
+              <p class="form-section-desc">Specify where and approximately when the item was lost or discovered.</p>
+
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label for="form-location" class="form-label">
+                    Campus Facility / Area <span class="required">*</span>
+                  </label>
+                  <select id="form-location" class="form-control" required>
+                    <option value="">Select a campus location...</option>
+                    <!-- Populated dynamically -->
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="form-specific-location" class="form-label">Room / Precise Spot</label>
+                  <input type="text" id="form-specific-location" class="form-control"
+                    placeholder="e.g. 2nd Floor Quiet Study, Desk 42">
+                </div>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label for="form-date" class="form-label">
+                    Date <span class="required">*</span>
+                  </label>
+                  <input type="date" id="form-date" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                  <label for="form-time" class="form-label">Approximate Time</label>
+                  <input type="time" id="form-time" class="form-control">
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 3: Description & Identifying Marks -->
+            <div class="form-section">
+              <h3 class="form-section-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="8" y1="6" x2="21" y2="6"></line>
+                  <line x1="8" y1="12" x2="21" y2="12"></line>
+                  <line x1="8" y1="18" x2="21" y2="18"></line>
+                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+                Description &amp; Verification Marks
+              </h3>
+              <p class="form-section-desc">Provide public description plus confidential distinctive traits used to
+                confirm true ownership.</p>
+
+              <div class="form-group">
+                <label for="form-description" class="form-label">
+                  Public Description <span class="required">*</span>
+                </label>
+                <textarea id="form-description" class="form-control"
+                  placeholder="Describe the item's condition, materials, brand labels, and any contents..."
+                  required></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="form-distinctive-marks" class="form-label">
+                  Secret / Distinctive Verification Marks
+                </label>
+                <textarea id="form-distinctive-marks" class="form-control"
+                  placeholder="e.g. Unique scratches, stickers, custom engraving, device wallpaper, or keychain attachments. (Used by safety desk to verify claims)"></textarea>
+                <span class="form-hint">Tip: Distinctive marks help verify rightful owners before handover.</span>
+              </div>
+            </div>
+
+            <!-- Section 4: Photo / Image Upload Simulation -->
+            <div class="form-section">
+              <h3 class="form-section-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                Item Photo (Optional)
+              </h3>
+              <p class="form-section-desc">Attach a picture to boost recovery probability by 70%.</p>
+
+              <div class="upload-drop-zone" id="upload-zone">
+                <input type="file" id="form-image-file" accept="image/*" style="display: none;">
+                <div class="upload-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                </div>
+                <div class="upload-title">Click to upload or drag &amp; drop item photo</div>
+                <div class="upload-sub">Supports PNG, JPG, WEBP up to 10MB</div>
+              </div>
+
+              <div class="preview-container" id="image-preview-wrapper" style="display: none;">
+                <img id="form-preview-img" src="" alt="Upload Preview" class="preview-img">
+                <div>
+                  <strong id="preview-filename">image.jpg</strong>
+                  <div style="font-size: 0.75rem; color: var(--slate-500); margin-top: 0.2rem;">Ready for submission
+                  </div>
+                  <button type="button" class="btn btn-outline btn-sm" id="btn-remove-preview"
+                    style="margin-top: 0.4rem;">Remove</button>
+                </div>
+              </div>
+
+              <div class="preset-photos-picker">
+                <div class="preset-photos-label">Or choose a realistic quick preset for testing:</div>
+                <div class="preset-chips-row">
+                  <button type="button" class="preset-chip-btn" data-preset="airpods">AirPods</button>
+                  <button type="button" class="preset-chip-btn" data-preset="hydroflask">Hydro Flask</button>
+                  <button type="button" class="preset-chip-btn" data-preset="calculator">Calculator</button>
+                  <button type="button" class="preset-chip-btn" data-preset="backpack">Backpack</button>
+                  <button type="button" class="preset-chip-btn" data-preset="keys">Car Keys</button>
+                  <button type="button" class="preset-chip-btn" data-preset="wallet">Wallet</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 5: Specific Fields (Urgency/Reward or Handover Depot) -->
+            <div class="form-section" id="section-type-specific">
+              <!-- Lost specific fields -->
+              <div id="fields-lost-only">
+                <h3 class="form-section-title">Urgency &amp; Optional Reward</h3>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="form-urgency" class="form-label">Urgency Level</label>
+                    <select id="form-urgency" class="form-control">
+                      <option value="medium">Standard / Medium</option>
+                      <option value="high">High (Medication, Keys, Exam Material, ID)</option>
+                      <option value="low">Low (Standard Non-Critical)</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="form-reward" class="form-label">Finder's Reward (Optional)</label>
+                    <input type="text" id="form-reward" class="form-control" placeholder="e.g. $20, Coffee on me, $50">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Found specific fields -->
+              <div id="fields-found-only" style="display: none;">
+                <h3 class="form-section-title">Current Custody &amp; Handover Location</h3>
+                <div class="form-group">
+                  <label for="form-handover" class="form-label">
+                    Where is this item currently held? <span class="required">*</span>
+                  </label>
+                  <select id="form-handover" class="form-control">
+                    <option value="Campus Safety & Security Office">Handed to: Campus Safety &amp; Security Office
+                      (Recommended)</option>
+                    <option value="Main Library Circulation & Security Desk">Handed to: Main Library Circulation Desk
+                    </option>
+                    <option value="Student Union Info Desk (Room 112)">Handed to: Student Union Info Desk</option>
+                    <option value="Department Front Office">Handed to: Department / Lab Reception</option>
+                    <option value="In Finder Custody (Will coordinate via Campus Safety)">Held by Finder (Will bring to
+                      safety desk on claim)</option>
+                  </select>
+                  <span class="form-hint">Campus policy recommends turning high-value items into official depots within
+                    24 hours.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 6: Contact Information -->
+            <div class="form-section">
+              <h3 class="form-section-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                Reporter Contact Information
+              </h3>
+              <p class="form-section-desc">Used exclusively by campus dispatch to notify you when a match is verified.
+              </p>
+
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label for="form-contact-name" class="form-label">
+                    Your Full Name <span class="required">*</span>
+                  </label>
+                  <input type="text" id="form-contact-name" class="form-control" value="Alex Patel" required>
+                </div>
+
+                <div class="form-group">
+                  <label for="form-contact-role" class="form-label">Campus Affiliation</label>
+                  <input type="text" id="form-contact-role" class="form-control" value="Undergraduate Student (CS '27)">
+                </div>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label for="form-contact-email" class="form-label">
+                    Campus Email (.edu) <span class="required">*</span>
+                  </label>
+                  <input type="email" id="form-contact-email" class="form-control" value="a.patel@campus.edu" required>
+                </div>
+
+                <div class="form-group">
+                  <label for="form-contact-phone" class="form-label">Phone Number</label>
+                  <input type="tel" id="form-contact-phone" class="form-control" placeholder="+1 (555) 000-0000"
+                    value="+1 (555) 438-9921">
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-top: 1rem;">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="form-honor-code" required checked>
+                  <span>I certify that this report is genuine and adheres to the Campus Honor Code and property
+                    guidelines.</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Form Action Footer -->
+            <div class="form-actions-bar">
+              <button type="button" class="btn btn-secondary" id="btn-cancel-report">Cancel</button>
+              <button type="submit" class="btn btn-primary btn-lg" id="btn-submit-report">
+                Submit Report to Campus Hub
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ======================================================================
+       REUSABLE MODAL 1: ITEM DETAIL MODAL
+       ====================================================================== -->
+  <div class="modal-overlay" id="item-detail-modal" role="dialog" aria-modal="true"
+    aria-labelledby="modal-detail-title">
+    <div class="modal-content">
+      <button type="button" class="modal-close-btn" id="btn-close-detail-modal" aria-label="Close dialog">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div class="detail-modal-layout">
+        <div class="detail-modal-media">
+          <img id="detail-img" src="" alt="Item photo" class="detail-modal-img">
+          <div class="detail-modal-badge-overlay">
+            <span class="badge" id="detail-type-badge">LOST</span>
+            <span class="reward-pill" id="detail-reward-pill" style="display: none;">Reward: $25</span>
+          </div>
+        </div>
+
+        <div class="detail-modal-info">
+          <div class="detail-meta-header">
+            <div class="detail-item-id" id="detail-id-text">FMT-1001</div>
+            <h2 class="detail-title" id="modal-detail-title">Item Title</h2>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <span class="badge badge-category" id="detail-category-badge">Category</span>
+              <span class="badge" id="detail-urgency-badge">High Urgency</span>
+            </div>
+          </div>
+
+          <!-- Timeline Status Tracker -->
+          <div class="status-tracker">
+            <div class="tracker-step completed">
+              <span class="tracker-dot"></span>
+              <span>1. Reported</span>
+            </div>
+            <div class="tracker-divider"></div>
+            <div class="tracker-step active" id="tracker-step-2">
+              <span class="tracker-dot"></span>
+              <span id="tracker-step-2-label">2. Logged</span>
+            </div>
+            <div class="tracker-divider"></div>
+            <div class="tracker-step" id="tracker-step-3">
+              <span class="tracker-dot"></span>
+              <span>3. Returned</span>
+            </div>
+          </div>
+
+          <!-- Specs Table -->
+          <div class="detail-specs-grid">
+            <div class="spec-item">
+              <span class="spec-label">Location</span>
+              <span class="spec-val" id="detail-location-val">Main Library</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Specific Room / Spot</span>
+              <span class="spec-val" id="detail-specific-val">2nd Floor Quiet Study</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Date Reported</span>
+              <span class="spec-val" id="detail-date-val">Nov 16, 2026</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Handover Station</span>
+              <span class="spec-val" id="detail-handover-val">Library Desk</span>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="detail-section-block">
+            <div class="detail-section-heading">Detailed Description</div>
+            <p class="detail-desc-text" id="detail-description-text"></p>
+          </div>
+
+          <!-- Distinctive Marks -->
+          <div class="detail-section-block" id="detail-distinctive-block">
+            <div class="detail-section-heading">Distinctive Features &amp; Verification Marks</div>
+            <div class="distinctive-box" id="detail-distinctive-text"></div>
+            <div class="confidential-box protected" id="detail-distinctive-masked" style="display: none;">
+              🔒 <strong>Confidential Traits Protected:</strong> Distinctive marks, engravings and internal traits are
+              kept private to protect student ownership. They are securely verified by campus desk staff upon claim
+              review.
+            </div>
+          </div>
+
+          <!-- Reporter / Contact Desk Box -->
+          <div class="detail-contact-box" id="detail-contact-box">
+            <h5 id="detail-contact-title">Contact Point: Campus Safety &amp; Desk</h5>
+            <p id="detail-contact-body">Marcus Vance (SU Helpdesk) &bull; Phone: (555) 019-3320</p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="detail-actions-row">
+            <button type="button" class="btn btn-primary" id="btn-detail-primary-action">
+              Claim This Item
+            </button>
+            <button type="button" class="btn btn-secondary" id="btn-detail-resolve" style="display: none;"
+              onclick="FMT.toggleCurrentItemStatus()">
+              Mark as Resolved
+            </button>
+            <button type="button" class="btn btn-danger btn-sm" id="btn-detail-delete" style="display: none;"
+              onclick="FMT.deleteCurrentItem()">
+              Delete Notice
+            </button>
+            <button type="button" class="btn btn-outline" id="btn-share-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+              </svg>
+              Share Link
+            </button>
+            <button type="button" class="btn btn-outline" id="btn-print-flyer" title="Print campus notice flyer">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+              </svg>
+              Print Flyer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       REUSABLE MODAL 2: CLAIM VERIFICATION QUESTIONNAIRE MODAL
+       ====================================================================== -->
+  <div class="modal-overlay" id="claim-modal" role="dialog" aria-modal="true" aria-labelledby="claim-modal-title">
+    <div class="modal-content claim-modal-content">
+      <button type="button" class="modal-close-btn" id="btn-close-claim-modal" aria-label="Close dialog">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div class="claim-modal-header">
+        <span class="badge badge-found" style="margin-bottom: 0.5rem;">OWNERSHIP VERIFICATION</span>
+        <h3 id="claim-modal-title">Submit Verification for Item Claim</h3>
+        <p id="claim-modal-subtitle">To protect students, items can only be claimed with proof of ownership.</p>
+      </div>
+
+      <div class="claim-notice">
+        <strong>Campus Safety Procedure:</strong> Your answers will be verified by desk staff against the item's logged
+        serials, distinctive scratches, lock screens, or interior contents.
+      </div>
+
+      <form id="claim-verification-form">
+        <input type="hidden" id="claim-item-id-field" value="">
+
+        <div class="form-group">
+          <label for="claim-proof" class="form-label">
+            Describe Hidden / Distinctive Traits <span class="required">*</span>
+          </label>
+          <textarea id="claim-proof" class="form-control"
+            placeholder="Mention passcode hint, lockscreen wallpaper, serial digits, internal bag contents, or specific scratches only the true owner would know..."
+            required></textarea>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="claim-student-id" class="form-label">
+              Student / Staff ID Number <span class="required">*</span>
+            </label>
+            <input type="text" id="claim-student-id" class="form-control" placeholder="e.g. 903-882-190" required>
+          </div>
+
+          <div class="form-group">
+            <label for="claim-pickup-time" class="form-label">
+              Estimated Pickup Time <span class="required">*</span>
+            </label>
+            <select id="claim-pickup-time" class="form-control" required>
+              <option value="today-afternoon">Today: 1:00 PM &ndash; 5:00 PM</option>
+              <option value="today-evening">Today: 5:00 PM &ndash; 9:00 PM</option>
+              <option value="tomorrow-morning">Tomorrow: 9:00 AM &ndash; 1:00 PM</option>
+              <option value="tomorrow-afternoon">Tomorrow: 1:00 PM &ndash; 5:00 PM</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="claim-agree" required checked>
+            <span>I acknowledge that filing a fraudulent property claim violates the Student Code of Conduct and will be
+              referred to University Disciplinary Board.</span>
+          </label>
+        </div>
+
+        <div class="form-actions-bar">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-claim">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-confirm-claim">
+            Submit Claim Verification
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       REUSABLE MODAL 3: HANDOVER DEPOTS DIRECTORY MODAL
+       ====================================================================== -->
+  <div class="modal-overlay" id="depots-modal" role="dialog" aria-modal="true" aria-labelledby="depots-modal-title">
+    <div class="modal-content" style="max-width: 680px; padding: 2rem;">
+      <button type="button" class="modal-close-btn" id="btn-close-depots-modal" aria-label="Close dialog">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div style="margin-bottom: 1.5rem;">
+        <span class="badge badge-found" style="margin-bottom: 0.5rem;">CAMPUS NETWORK</span>
+        <h3 id="depots-modal-title" style="font-size: 1.4rem; font-weight: 800;">Official Lost &amp; Found Depots</h3>
+        <p style="color: var(--slate-600); font-size: 0.875rem;">Bring found items or retrieve claimed belongings at
+          these staffed campus locations.</p>
+      </div>
+
+      <div class="items-mini-list" style="gap: 1rem;">
+        <div class="depot-card">
+          <div class="depot-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-600)" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            1. Campus Safety &amp; Security HQ (24/7)
+          </div>
+          <div class="depot-meta">East Gate Security Building Room 102</div>
+          <div class="depot-hours">Open 24 hours daily for high-value items, passports, car keys, electronics.</div>
+        </div>
+
+        <div class="depot-card">
+          <div class="depot-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-600)" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+            2. Main Library Circulation Desk
+          </div>
+          <div class="depot-meta">Library 1st Floor Concourse &bull; Phone: (555) 443-1200</div>
+          <div class="depot-hours">Mon - Fri: 7:30 AM &ndash; Midnight | Weekends: 9 AM &ndash; 10 PM</div>
+        </div>
+
+        <div class="depot-card">
+          <div class="depot-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-600)" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+              <line x1="9" y1="9" x2="9.01" y2="9"></line>
+              <line x1="15" y1="9" x2="15.01" y2="9"></line>
+            </svg>
+            3. Student Union Information Center
+          </div>
+          <div class="depot-meta">Student Union Level 1, Room 112 &bull; Phone: (555) 019-3320</div>
+          <div class="depot-hours">Mon - Sat: 8:00 AM &ndash; 9:00 PM</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       REUSABLE MODAL 4: AUTHENTICATION MODAL (STUDENT REGISTRATION & LOGIN)
+       ====================================================================== -->
+  <div class="modal-overlay" id="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+    <div class="modal-content auth-modal-content">
+      <button type="button" class="modal-close-btn" id="btn-close-auth-modal" aria-label="Close dialog"
+        onclick="FMT.closeAuthModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab-btn active" id="tab-login" onclick="FMT.switchAuthTab('login')">Student
+          Sign In</button>
+        <button type="button" class="auth-tab-btn" id="tab-register" onclick="FMT.switchAuthTab('register')">Create
+          Account</button>
+      </div>
+
+      <!-- Sign In Form -->
+      <div class="auth-form-card active" id="auth-card-login">
+        <h3 id="auth-modal-title" style="margin-bottom: 0.35rem; font-size: 1.25rem;">Welcome to Campus Lost &amp; Found
+        </h3>
+        <p style="color: var(--slate-600); font-size: 0.875rem; margin-bottom: 1.25rem;">Sign in to report lost items,
+          verify ownership, and track claims.</p>
+
+        <form id="form-login" onsubmit="FMT.handleLoginSubmit(event)">
+          <div class="form-group">
+            <label for="login-email" class="form-label">Campus Email (.edu) <span class="required">*</span></label>
+            <input type="email" id="login-email" class="form-control" placeholder="your.name@campus.edu" required
+              autocomplete="email">
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label for="login-password" class="form-label">Password <span class="required">*</span></label>
+              <a href="javascript:void(0)" onclick="FMT.promptForgotPassword()"
+                style="font-size: 0.75rem; color: var(--primary-600); font-weight: 600;">Forgot password?</a>
+            </div>
+            <input type="password" id="login-password" class="form-control" placeholder="••••••••" required
+              autocomplete="current-password">
+          </div>
+
+          <div class="form-actions-bar" style="margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary" id="btn-submit-login"
+              style="width: 100%; justify-content: center;">
+              Sign In to FINDMYTHING
+            </button>
+          </div>
+
+          <div style="margin-top: 1rem; text-align: center; font-size: 0.8125rem; color: var(--slate-500);">
+            Don't have an account? <a href="javascript:void(0)" onclick="FMT.switchAuthTab('register')"
+              style="color: var(--primary-600); font-weight: 600;">Register here</a>
+          </div>
+        </form>
+      </div>
+
+      <!-- Registration Form -->
+      <div class="auth-form-card" id="auth-card-register">
+        <h3 style="margin-bottom: 0.35rem; font-size: 1.25rem;">Student &amp; Staff Registration</h3>
+        <p style="color: var(--slate-600); font-size: 0.875rem; margin-bottom: 1.25rem;">Create a verified campus
+          profile to safeguard your belongings.</p>
+
+        <form id="form-register" onsubmit="FMT.handleRegisterSubmit(event)">
+          <div class="form-group">
+            <label for="reg-name" class="form-label">Full Name <span class="required">*</span></label>
+            <input type="text" id="reg-name" class="form-control" placeholder="e.g. Jordan Patel" required
+              autocomplete="name">
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="reg-student-id" class="form-label">Student / Staff ID <span class="required">*</span></label>
+              <input type="text" id="reg-student-id" class="form-control" placeholder="e.g. 903-882-190" required>
+            </div>
+            <div class="form-group">
+              <label for="reg-phone" class="form-label">Phone Number <span class="required">*</span></label>
+              <input type="tel" id="reg-phone" class="form-control" placeholder="+1 (555) 000-0000" required
+                autocomplete="tel">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="reg-email" class="form-label">Campus Email <span class="required">*</span></label>
+            <input type="email" id="reg-email" class="form-control" placeholder="j.patel@campus.edu" required
+              autocomplete="email">
+            <span style="font-size: 0.75rem; color: var(--slate-500);">A verification link will be sent to this
+              address.</span>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="reg-password" class="form-label">Password <span class="required">*</span></label>
+              <input type="password" id="reg-password" class="form-control" placeholder="At least 6 characters"
+                minlength="6" required autocomplete="new-password">
+            </div>
+            <div class="form-group">
+              <label for="reg-password-confirm" class="form-label">Confirm Password <span
+                  class="required">*</span></label>
+              <input type="password" id="reg-password-confirm" class="form-control" placeholder="Repeat password"
+                minlength="6" required autocomplete="new-password">
+            </div>
+          </div>
+
+          <div class="confidential-box" style="margin-top: 0.5rem; margin-bottom: 1rem; font-size: 0.75rem;">
+            <strong>Security Notice:</strong> All new registrations are assigned standard <em>Student</em> privileges.
+            Admin rights cannot be self-assigned and must be provisioned by Campus Safety through authorized
+            administrative credentials.
+          </div>
+
+          <div class="form-actions-bar">
+            <button type="submit" class="btn btn-primary" id="btn-submit-register"
+              style="width: 100%; justify-content: center;">
+              Create Student Account
+            </button>
+          </div>
+
+          <div style="margin-top: 1rem; text-align: center; font-size: 0.8125rem; color: var(--slate-500);">
+            Already have an account? <a href="javascript:void(0)" onclick="FMT.switchAuthTab('login')"
+              style="color: var(--primary-600); font-weight: 600;">Sign in</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       REUSABLE MODAL 5: ADMIN CLAIMS REVIEW & VERIFICATION DASHBOARD
+       ====================================================================== -->
+  <div class="modal-overlay" id="admin-claims-modal" role="dialog" aria-modal="true"
+    aria-labelledby="admin-claims-title">
+    <div class="modal-content admin-modal-content">
+      <button type="button" class="modal-close-btn" id="btn-close-admin-claims" aria-label="Close dialog"
+        onclick="FMT.closeAdminClaimsModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem;">
+        <div>
+          <span class="role-badge role-badge-admin" style="margin-bottom: 0.5rem;">CAMPUS SAFETY ADMIN</span>
+          <h3 id="admin-claims-title" style="font-size: 1.4rem; font-weight: 800;">Ownership Verification Claims Review
+          </h3>
+          <p style="color: var(--slate-600); font-size: 0.875rem;">Inspect confidential student proofs, cross-reference
+            item traits, and approve or reject claims.</p>
+        </div>
+      </div>
+
+      <!-- Claims Filter Bar -->
+      <div class="admin-claims-tabs">
+        <button type="button" class="admin-filter-pill active" data-claim-filter="all"
+          onclick="FMT.filterAdminClaims('all')">All Claims (<span id="count-claim-all">0</span>)</button>
+        <button type="button" class="admin-filter-pill" data-claim-filter="pending"
+          onclick="FMT.filterAdminClaims('pending')">Pending Review (<span id="count-claim-pending">0</span>)</button>
+        <button type="button" class="admin-filter-pill" data-claim-filter="approved"
+          onclick="FMT.filterAdminClaims('approved')">Approved (<span id="count-claim-approved">0</span>)</button>
+        <button type="button" class="admin-filter-pill" data-claim-filter="rejected"
+          onclick="FMT.filterAdminClaims('rejected')">Rejected (<span id="count-claim-rejected">0</span>)</button>
+      </div>
+
+      <!-- Claims List -->
+      <div id="admin-claims-container" style="max-height: 55vh; overflow-y: auto; padding-right: 0.5rem;">
+        <div style="text-align: center; padding: 3rem 1rem; color: var(--slate-400);">Loading claims records...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       REUSABLE MODAL 6: STUDENT'S "MY CLAIMS" STATUS MODAL
+       ====================================================================== -->
+  <div class="modal-overlay" id="my-claims-modal" role="dialog" aria-modal="true" aria-labelledby="my-claims-title">
+    <div class="modal-content" style="max-width: 680px; padding: 2rem;">
+      <button type="button" class="modal-close-btn" id="btn-close-my-claims" aria-label="Close dialog"
+        onclick="FMT.closeMyClaimsModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div style="margin-bottom: 1.5rem;">
+        <span class="badge badge-found" style="margin-bottom: 0.5rem;">STUDENT PORTAL</span>
+        <h3 id="my-claims-title" style="font-size: 1.4rem; font-weight: 800;">My Submitted Claims</h3>
+        <p style="color: var(--slate-600); font-size: 0.875rem;">Track the status of your ownership verification
+          requests and pickup instructions.</p>
+      </div>
+
+      <div id="my-claims-container" style="max-height: 50vh; overflow-y: auto;">
+        <div style="text-align: center; padding: 2rem 1rem; color: var(--slate-400);">No claims submitted yet.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       REUSABLE MODAL 7: FIREBASE SETUP & CONFIGURATION INSTRUCTIONS
+       ====================================================================== -->
+  <div class="modal-overlay" id="firebase-setup-modal" role="dialog" aria-modal="true"
+    aria-labelledby="setup-modal-title">
+    <div class="modal-content" style="max-width: 720px; padding: 2rem;">
+      <button type="button" class="modal-close-btn" aria-label="Close dialog" onclick="FMT.closeFirebaseSetupModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div style="margin-bottom: 1.25rem;">
+        <span class="badge badge-urgent" style="margin-bottom: 0.5rem;">INTEGRATION GUIDE</span>
+        <h3 id="setup-modal-title" style="font-size: 1.4rem; font-weight: 800;">Connecting FINDMYTHING to Firebase</h3>
+        <p style="color: var(--slate-600); font-size: 0.875rem;">Follow these 4 quick steps to connect Authentication
+          and Cloud Firestore (No Cloud Storage required!).</p>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 1rem; font-size: 0.875rem; line-height: 1.6;">
+        <div class="claim-proof-box">
+          <strong>1. Create Firebase Project</strong><br>
+          Visit <a href="https://console.firebase.google.com/" target="_blank" rel="noopener"
+            style="color: var(--primary-600); text-decoration: underline;">Firebase Console</a> &rarr; Click <em>Add
+            Project</em> &rarr; Name it (e.g. <code>campus-findmything</code>).
+        </div>
+        <div class="claim-proof-box">
+          <strong>2. Enable Firebase Authentication</strong><br>
+          In Firebase Console &rarr; <em>Build</em> &rarr; <em>Authentication</em> &rarr; Click <em>Get Started</em>
+          &rarr; Enable <strong>Email/Password</strong> provider.
+        </div>
+        <div class="claim-proof-box">
+          <strong>3. Enable Cloud Firestore Database</strong><br>
+          In Firebase Console &rarr; <em>Build</em> &rarr; <em>Firestore Database</em> &rarr; Click <em>Create
+            Database</em> &rarr; Start in Test or Production mode.
+        </div>
+        <div class="claim-proof-box">
+          <strong>4. Add Web App &amp; Insert Credentials</strong><br>
+          Project Settings (⚙) &rarr; General &rarr; <em>Your apps</em> &rarr; Add Web App (<code>&lt;/&gt;</code>)
+          &rarr; Copy the <code>firebaseConfig</code> object into <code>firebase-config.js</code>.
+        </div>
+        <div class="confidential-box protected">
+          <strong>Security Rules Deployment:</strong> Deploy the provided <code>firestore.rules</code> using the
+          Firebase CLI (<code>firebase deploy --only firestore:rules</code>) or by pasting it into the Firebase Console
+          Firestore Rules tab.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div class="brand" style="color: white; margin-bottom: 1rem;">
+            <div class="brand-icon" style="background: var(--primary-600);">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </div>
+            FINDMYTHING
+          </div>
+          <p style="font-size: 0.875rem; line-height: 1.6; margin-bottom: 1rem;">
+            The unified collegiate lost and found platform, connecting students, staff, and campus safety to recover
+            missing belongings with safety and transparency.
+          </p>
+          <div style="font-size: 0.8125rem; color: var(--slate-400);">
+            Maintained by University Department of Public Safety &amp; Associated Students Council.
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h5>Quick Navigation</h5>
+          <ul class="footer-links-list">
+            <li><a href="#dashboard" data-view="dashboard">Dashboard Home</a></li>
+            <li><a href="#lost" data-view="lost">Lost Belongings Directory</a></li>
+            <li><a href="#found" data-view="found">Recovered Items Feed</a></li>
+            <li><a href="#report" data-view="report">Submit a New Report</a></li>
+            <li><a href="#depots" id="footer-depots-link">Official Safe Depots</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Campus Item Guidelines</h5>
+          <ul class="footer-links-list">
+            <li><a href="javascript:void(0)"
+                onclick="FMT.showToast('High-value items (laptops, phones, jewelry) are transferred to Safety HQ within 24 hrs.', 'info')">High-Value
+                Property Protocol</a></li>
+            <li><a href="javascript:void(0)"
+                onclick="FMT.showToast('Student ID cards found on campus are routed directly to the Registrar ID Office.', 'info')">Lost
+                Student IDs &amp; Badges</a></li>
+            <li><a href="javascript:void(0)"
+                onclick="FMT.showToast('Unclaimed items after 90 days are donated to campus community charities.', 'info')">90-Day
+                Retention Policy</a></li>
+            <li><a href="javascript:void(0)"
+                onclick="FMT.showToast('Reporting false claims violates Section 4.2 of the Student Honor Code.', 'warning')">Honor
+                Code &amp; False Claims</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Emergency &amp; Dispatch</h5>
+          <div class="footer-contact-item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path
+                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+              </path>
+            </svg>
+            <div>
+              <strong>Emergency Dispatch:</strong> (555) 911-2000<br>
+              <span style="font-size: 0.75rem; color: var(--slate-400);">24/7 Campus Police Desk</span>
+            </div>
+          </div>
+          <div class="footer-contact-item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+            <div>
+              <strong>Lost &amp; Found Email:</strong> lostfound@campus.edu<br>
+              <span style="font-size: 0.75rem; color: var(--slate-400);">Average response: under 2 hours</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 FINDMYTHING Campus Portal. All Rights Reserved. Built for student community welfare.</div>
+        <div style="display: flex; gap: 1.5rem;">
+          <a href="javascript:void(0)"
+            onclick="FMT.showToast('Privacy Policy: All student contact information is kept strictly confidential.', 'info')">Privacy
+            Policy</a>
+          <a href="javascript:void(0)"
+            onclick="FMT.showToast('Accessibility: WCAG 2.1 AA compliant design.', 'info')">Accessibility</a>
+          <a href="javascript:void(0)" onclick="FMT.runTests()">Run System Tests</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script src="data.js"></script>
+  <script type="module" src="firebase-config.js"></script>
+  <script type="module" src="firebase-service.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+
+</html>

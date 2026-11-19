@@ -1,0 +1,146 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        getUserData().role == 'admin';
+    }
+
+    // --- Users Collection ---
+    // Users can read only their own profile; admins can read all profiles.
+    // When registering, role MUST be 'student'. Users cannot escalate themselves to 'admin'.
+    // Only existing admins can promote or demote roles.
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      
+      allow create: if isAuthenticated() &&
+        isOwner(userId) &&
+        request.resource.data.role == 'student' &&
+        request.resource.data.email == request.auth.token.email;
+        
+      allow update: if isAuthenticated() && (
+        // Regular user updating their own profile without changing role
+        (isOwner(userId) && request.resource.data.role == resource.data.role) ||
+        // Admin updating profile or role
+        isAdmin()
+      );
+      
+      allow delete: if isAdmin();
+    }
+
+    // --- Lost Items Collection ---
+    // Public directory readable by authenticated campus members.
+    // Confidential distinct marks and private contact details are secured.
+    // Only the reporter or an admin can edit or remove their report.
+    match /lost_items/{itemId} {
+      allow read: if isAuthenticated();
+      
+      allow create: if isAuthenticated() &&
+        request.resource.data.reporterUid == request.auth.uid &&
+        request.resource.data.type == 'lost' &&
+        request.resource.data.title is string &&
+        request.resource.data.title.size() > 0 &&
+        request.resource.data.title.size() <= 120;
+        
+      allow update: if isAuthenticated() && (
+        // Reporter can update their report details or mark resolved
+        resource.data.reporterUid == request.auth.uid ||
+        // Admin can update any report or status
+        isAdmin() ||
+        // An authenticated student finder reporting that they found this lost item
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'foundAt', 'finderUid', 'finderName', 'linkedFoundItemId', 'updatedAt']) &&
+          request.resource.data.status in ['found', 'resolved'] &&
+          request.resource.data.finderUid == request.auth.uid
+        )
+      );
+      
+      allow delete: if isAuthenticated() && (
+        resource.data.reporterUid == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // --- Found Items Collection ---
+    // Public directory readable by authenticated campus members.
+    // Stored in depots or logged by finders.
+    match /found_items/{itemId} {
+      allow read: if isAuthenticated();
+      
+      allow create: if isAuthenticated() &&
+        request.resource.data.reporterUid == request.auth.uid &&
+        request.resource.data.type == 'found' &&
+        request.resource.data.title is string &&
+        request.resource.data.title.size() > 0 &&
+        request.resource.data.title.size() <= 120;
+        
+      allow update: if isAuthenticated() && (
+        resource.data.reporterUid == request.auth.uid ||
+        isAdmin()
+      );
+      
+      allow delete: if isAuthenticated() && (
+        resource.data.reporterUid == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // --- Ownership Verification Claims Collection ---
+    // Confidential answers (proof of ownership, student ID, secret traits)
+    // Only the claimant or an authorized administrator can view the claim.
+    // Students CANNOT approve or reject claims (status must remain 'pending' on creation).
+    // ONLY admins can approve or reject claims!
+    match /claims/{claimId} {
+      // Only claimant or admin can view the claim request
+      allow read: if isAuthenticated() && (
+        resource.data.claimantUid == request.auth.uid ||
+        isAdmin()
+      );
+      
+      // Students can submit a claim with 'pending' status
+      allow create: if isAuthenticated() &&
+        request.resource.data.claimantUid == request.auth.uid &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.proof is string &&
+        request.resource.data.proof.size() >= 5;
+        
+      // ONLY admins can review, approve, or reject claims!
+      // Students cannot modify a claim once submitted.
+      allow update: if isAdmin();
+      
+      allow delete: if isAdmin();
+    }
+
+    // --- Campus Notifications Collection ---
+    // Direct notification messages for students regarding their claims, reports, and matches
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        (resource.data.targetRole == 'admin' && isAdmin())
+      );
+      
+      allow create: if isAuthenticated();
+      
+      allow update: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+        
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+  }
+}

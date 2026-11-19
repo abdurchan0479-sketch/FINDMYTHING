@@ -1,0 +1,30 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Item Photographs
+    // Stored under item_images/{itemId}/{fileName} or item_images/{fileName}
+    match /item_images/{allPaths=**} {
+      // Any authenticated campus student or staff can view item photos
+      allow read: if isAuthenticated();
+
+      // Uploads restricted to authenticated users with image validation & size limit
+      allow write: if isAuthenticated() &&
+        // File must be an image
+        request.resource.contentType.matches('image/.*') &&
+        // Max file size: 5MB (5 * 1024 * 1024 bytes)
+        request.resource.size < 5 * 1024 * 1024;
+    }
+
+    // User Avatar / ID Verification Documents (Admin & Owner only)
+    match /user_docs/{userId}/{allPaths=**} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId);
+      allow write: if isAuthenticated() && (request.auth.uid == userId) &&
+        request.resource.size < 5 * 1024 * 1024;
+    }
+  }
+}
