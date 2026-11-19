@@ -12,7 +12,7 @@
  */
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js';
-import { getAuth } from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js';
+import { getAuth, setPersistence, browserSessionPersistence } from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js';
 import { getFirestore } from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js';
 
 // --- YOUR FIREBASE CONFIGURATION ---
@@ -47,19 +47,33 @@ let app = null;
 let auth = null;
 let db = null;
 
+
 if (isFirebaseConfigured()) {
   try {
     app = initializeApp(firebaseConfig);
+
+    // Initialize Firebase Authentication
     auth = getAuth(app);
+
+    // Initialize Firestore
     db = getFirestore(app);
-    console.info('[FINDMYTHING] Firebase initialized successfully with project:', firebaseConfig.projectId);
+
+    console.info(
+      '[FINDMYTHING] Firebase initialized successfully with project:',
+      firebaseConfig.projectId
+    );
   } catch (err) {
     console.error('[FINDMYTHING] Failed to initialize Firebase:', err);
   }
 } else {
   console.warn(
-    '[FINDMYTHING] Firebase is not yet configured. Please insert your credentials in firebase-config.js. Running in local fallback mode.'
+    '[FINDMYTHING] Firebase is not yet configured. Running in local fallback mode.'
   );
 }
+
+// Set session persistence before authentication operations
+export const authReady = auth
+  ? setPersistence(auth, browserSessionPersistence)
+  : Promise.resolve();
 
 export { app, auth, db };

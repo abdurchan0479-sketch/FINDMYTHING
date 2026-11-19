@@ -11,9 +11,9 @@
 import {
   isFirebaseConfigured,
   auth,
-  db
+  db,
+  authReady
 } from './firebase-config.js';
-
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -21,7 +21,9 @@ import {
   sendEmailVerification,
   sendPasswordResetEmail,
   updateProfile,
-  onAuthStateChanged
+  onAuthStateChanged,
+  setPersistence,
+  browserSessionPersistence
 } from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js';
 
 import {
@@ -88,8 +90,12 @@ export async function registerStudent({ email, password, displayName, studentId,
 
   try {
     // 1. Create user in Firebase Auth
+
+    await authReady;
+
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
+
 
     // 2. Set Firebase Auth display name
     await updateProfile(user, { displayName: displayName || email.split('@')[0] });
@@ -144,9 +150,13 @@ export async function loginUser({ email, password }) {
     };
   }
 
+
   try {
+    await authReady;
+
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
+
 
     // Load profile from Firestore
     let profile = null;
